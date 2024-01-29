@@ -22,7 +22,7 @@ G4PVPlacement* sanity_check_phantom::geometry() const {
   G4Colour green{1, 0.6, 0.6, 0.6};
 
   auto envelope = n4::box("Envelope").half_cube(15*cm).vis(true, blue).place(air).now();
-  auto sphere   = n4::sphere("Sphere").r(1*cm).vis(true, green).volume(water);
+  auto sphere   = n4::sphere("Sphere").r(5*cm).vis(true, green).volume(water);
 
   for (const auto& source : sources) {
     auto [x,y,z] = n4::unpack(source);

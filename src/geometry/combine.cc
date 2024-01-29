@@ -11,12 +11,6 @@ G4VPhysicalVolume* combine_geometries(G4VPhysicalVolume* phantom, G4VPhysicalVol
   auto detector_envelope = detector -> GetLogicalVolume();
   auto phantom_envelope  =  phantom -> GetLogicalVolume();
 
-  // TODO: not general enough: only uses translation ignores other transformations
-  // TODO Can we avoid extracting logical and use physical/placement directly ?
-  auto phantom_physical    = phantom_envelope -> GetDaughter(0);
-  auto phantom_logical     = phantom_physical -> GetLogicalVolume();
-  auto phantom_translation = phantom_physical -> GetTranslation();
-
   // Check whether phantom envelope fits inside detector envelope, with margin.
   auto& pbox = dynamic_cast<G4Box&>(* phantom_envelope -> GetSolid());
   auto& dbox = dynamic_cast<G4Box&>(*detector_envelope -> GetSolid());
@@ -35,8 +29,17 @@ G4VPhysicalVolume* combine_geometries(G4VPhysicalVolume* phantom, G4VPhysicalVol
     detector_envelope -> SetSolid(new_box);
   }
 
-  n4::place(phantom_logical).in(detector_envelope).at(phantom_translation).now();
-  delete phantom;
+  // TODO: not general enough: only uses translation ignores other transformations
+  // TODO Can we avoid extracting logical and use physical/placement directly ?
+  for (int d=0; d<phantom_envelope -> GetNoDaughters(); ++d) {
+    auto phantom_physical    = phantom_envelope -> GetDaughter(d);
+    auto phantom_logical     = phantom_physical -> GetLogicalVolume();
+    auto phantom_translation = phantom_physical -> GetTranslation();
+    n4::place(phantom_logical).in(detector_envelope).at(phantom_translation).now();
+  }
+
+  // Avoid having two world volumes
+  delete phantom; // TODO does this work by design or by accident? c.f. G4{Physical,Logical}VolumeStore::GetInstance() -> DeRegister()
 
   return detector;
 };

@@ -1,3 +1,5 @@
+#include <phantoms/sanity.hh>
+
 #include <n4-all.hh>
 
 #include <G4GenericMessenger.hh>
@@ -95,21 +97,23 @@ int main(int argc, char* argv[]) {
   messenger -> DeclareProperty        ("particle_direction",        my.particle_dir   );
   messenger -> DeclareProperty        ("physics_verbosity" ,        physics_verbosity );
 
+  auto sanity = sanity_check_phantom();
+
   n4::run_manager::create()
     .ui("fullpet", argc, argv)
     .macro_path("macs")
-    .apply_command("/my/straw_radius 0.5 m")
-    .apply_early_macro("early-hard-wired.mac")
-    .apply_cli_early() // CLI --early executed at this point
+    // .apply_command("/my/straw_radius 0.5 m")
+    // .apply_early_macro("early-hard-wired.mac")
+    // .apply_cli_early() // CLI --early executed at this point
     // .apply_command(...) // also possible after apply_early_macro
 
     .physics<FTFP_BERT>(physics_verbosity)
-    .geometry([&] { return my_geometry(my); })
-    .actions(create_actions(my, n_event))
+    .geometry          ([&] {return sanity.geometry(); })
+    .actions           ([&] (auto ev){return sanity.generate_primaries(ev); })
 
-    .apply_command("/my/particle e-")
-    .apply_late_macro("late-hard-wired.mac")
-    .apply_cli_late() // CLI --late executed at this point
+    // .apply_command("/my/particle e-")
+    // .apply_late_macro("late-hard-wired.mac")
+    // .apply_cli_late() // CLI --late executed at this point
     // .apply_command(...) // also possible after apply_late_macro
 
     .run();

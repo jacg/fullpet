@@ -35,8 +35,8 @@ geant4 = dependency( 'Geant4'
 
 fullpet_lib_deps     = [nain4, geant4]
 fullpet_lib_include  = include_directories('.')
-fullpet_lib_includes = ['LXe.hh']
-fullpet_lib_sources  = ['LXe.cc']
+fullpet_lib_includes = ['generators/generate_primaries.hh', 'phantoms/sanity.hh']
+fullpet_lib_sources  = ['generators/generate_primaries.cc', 'phantoms/sanity.cc']
 
 geant4_include = geant4.get_variable(cmake    : 'Geant4_INCLUDE_DIRS')
 nain4_include  =  nain4.get_variable(pkgconfig: 'includedir'         )

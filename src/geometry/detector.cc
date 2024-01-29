@@ -17,7 +17,8 @@ G4PVPlacement* detector() {
   auto air            = n4::material("G4_AIR");
   auto scint_material = pm::csi_with_properties(std::nullopt);
 
-  auto lab = n4::box("lab").half_cube(1.2*d_min).place(air).now();
+  G4Colour faint {0.1, 0.1, 0.1, 0.5};
+  auto lab = n4::box("lab").xy(d_min*1.1).z(length*1.1).vis(true, faint).place(air).now();
 
   G4Colour yellow = {1, 1, 0.2, 0.5};
 

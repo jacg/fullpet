@@ -2,9 +2,10 @@
   description = "MC simulation of a full-body PET";
 
   inputs = {
-    nain4  .url     = "github:jacg/nain4";
-    nosys  .follows = "nain4/nosys";
-    nixpkgs.follows = "nain4/nixpkgs";
+    nain4        .url     = "github:jacg/nain4";
+    pet-materials.url     = "github:gonzaponte/pet-materials";
+    nosys        .follows = "nain4/nosys";
+    nixpkgs      .follows = "nain4/nixpkgs";
   };
 
   outputs = inputs @ {

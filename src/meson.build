@@ -15,6 +15,11 @@ nain4  = dependency( 'nain4'
                    , required: true
                    )
 
+petmat = dependency( 'pet-materials'
+                   , method  : 'pkg-config'
+                   , required: true
+                   )
+
 geant4 = dependency( 'Geant4'
                    , method  : 'cmake'
                    , required: true
@@ -33,25 +38,26 @@ geant4 = dependency( 'Geant4'
                                , 'Geant4::G4UIVisDefinitions'
                                ])
 
-fullpet_lib_deps     = [nain4, geant4]
+fullpet_lib_deps     = [nain4, petmat, geant4]
 fullpet_lib_include  = include_directories('.')
-fullpet_lib_includes = ['generators/generate_primaries.hh', 'phantoms/sanity.hh']
-fullpet_lib_sources  = ['generators/generate_primaries.cc', 'phantoms/sanity.cc']
+fullpet_lib_includes = ['geometry/combine.hh', 'geometry/detector.hh', 'generators/generate_primaries.hh', 'phantoms/sanity.hh']
+fullpet_lib_sources  = ['geometry/combine.cc', 'geometry/detector.cc', 'generators/generate_primaries.cc', 'phantoms/sanity.cc']
 
 geant4_include = geant4.get_variable(cmake    : 'Geant4_INCLUDE_DIRS')
 nain4_include  =  nain4.get_variable(pkgconfig: 'includedir'         )
+petmat_include = petmat.get_variable(pkgconfig: 'includedir'         )
 
 
 fullpet_lib = shared_library( 'fullpet'
                                    , fullpet_lib_sources
-                                   , include_directories: [fullpet_lib_include, geant4_include]
+                                   , include_directories: [fullpet_lib_include, petmat_include, geant4_include]
                                    , dependencies       : fullpet_lib_deps
                                    , install            : true
                                    )
 
 fullpet_exe = executable( 'fullpet'
                                , ['fullpet.cc']
-                               , include_directories: [fullpet_lib_include, nain4_include, geant4_include]
+                               , include_directories: [fullpet_lib_include, nain4_include, petmat_include, geant4_include]
                                , dependencies       : fullpet_lib_deps
                                , link_with          : fullpet_lib
                                , install            : true

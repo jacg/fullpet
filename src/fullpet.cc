@@ -1,4 +1,6 @@
 #include <phantoms/sanity.hh>
+#include <geometry/combine.hh>
+#include <geometry/detector.hh>
 
 #include <n4-all.hh>
 
@@ -108,7 +110,7 @@ int main(int argc, char* argv[]) {
     // .apply_command(...) // also possible after apply_early_macro
 
     .physics<FTFP_BERT>(physics_verbosity)
-    .geometry          ([&] {return sanity.geometry(); })
+    .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
     .actions           ([&] (auto ev){return sanity.generate_primaries(ev); })
 
     // .apply_command("/my/particle e-")
@@ -117,9 +119,4 @@ int main(int argc, char* argv[]) {
     // .apply_command(...) // also possible after apply_late_macro
 
     .run();
-
-
-
-  // Important! physics list has to be set before the generator!
-
 }

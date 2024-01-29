@@ -53,16 +53,16 @@
 /vis/set/textColour white
 # Attach text to point in space
 #                    x  y z units font-size 2d-offset    the text
-/vis/scene/add/text 1.5 1 1   m      18        4 4       Corner of the box
+#/vis/scene/add/text 1.5 1 1   m      18        4 4       Corner of the box
 
 # Set colours, transparency and visibility
 
 #                              volume name  depth  visibility
-/vis/geometry/set/visibility      world       0       true
+#/vis/geometry/set/visibility      world       0       true
 
 #                        name  depth red green blue opacity
-/vis/geometry/set/colour world   0    0    0    1     .3
-/vis/geometry/set/colour bubble  0    1    0.6  0.6   .6
+#/vis/geometry/set/colour world   0    0    0    1     .3
+#/vis/geometry/set/colour bubble  0    1    0.6  0.6   .6
 
 # Two different rendering options
 /vis/viewer/set/style wireframe # Ugly, but might be useful if you need to look inside a volume

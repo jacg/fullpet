@@ -17,8 +17,13 @@ sanity_check_phantom::sanity_check_phantom()
 G4PVPlacement* sanity_check_phantom::geometry() const {
   auto air      = n4::material("G4_AIR");
   auto water    = n4::material("G4_WATER");
-  auto envelope = n4::box("Envelope").half_cube(15*cm).place(air).now();
-  auto sphere   = n4::sphere("Sphere").r(1*cm).volume(water);
+
+  G4Colour blue{0, 0, 1, 0.4};
+  G4Colour green{1, 0.6, 0.6, 0.6};
+
+  auto envelope = n4::box("Envelope").half_cube(15*cm).vis(true, blue).place(air).now();
+  auto sphere   = n4::sphere("Sphere").r(1*cm).vis(true, green).volume(water);
+
   for (const auto& source : sources) {
     auto [x,y,z] = n4::unpack(source);
     n4::place(sphere).in(envelope).at(x,y,z).now();

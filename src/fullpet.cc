@@ -1,6 +1,7 @@
-#include <phantoms/sanity.hh>
 #include <geometry/combine.hh>
 #include <geometry/detector.hh>
+#include <io/hdf5.hh>
+#include <phantoms/sanity.hh>
 
 #include <n4-all.hh>
 
@@ -18,6 +19,7 @@
 #include <G4Gamma.hh>
 
 #include <cstdlib>
+#include <memory>
 
 auto sanity = sanity_check_phantom();
 
@@ -91,6 +93,8 @@ int main(int argc, char* argv[]) {
   my my;
 
   G4int physics_verbosity = 0;
+
+  std::unique_ptr<hdf5_io> writer;
 
   // The trailing slash after '/my_geometry' is CRUCIAL: without it, the
   // messenger violates the principle of least surprise.

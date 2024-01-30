@@ -1,5 +1,5 @@
 project( 'fullpet'
-       , 'cpp'
+       , ['cpp', 'c']
        , version : 'v0.0.0'
        , default_options : [ 'buildtype=debugoptimized'
                            , 'debug=true'
@@ -38,30 +38,42 @@ geant4 = dependency( 'Geant4'
                                , 'Geant4::G4UIVisDefinitions'
                                ])
 
-fullpet_lib_deps     = [nain4, petmat, geant4]
+hdf5 = dependency( 'hdf5'
+                 #, method  : 'auto'
+                 , language: 'cpp'
+                 , required: true
+                 )
+
+high5 = dependency( 'HighFive'
+                  , method  : 'cmake'
+                  , required: true)
+
+fullpet_lib_deps     = [nain4, petmat, geant4, hdf5, high5]
 fullpet_lib_include  = include_directories('.')
-fullpet_lib_includes = ['geometry/combine.hh', 'geometry/detector.hh', 'generators/generate_primaries.hh', 'phantoms/sanity.hh']
-fullpet_lib_sources  = ['geometry/combine.cc', 'geometry/detector.cc', 'generators/generate_primaries.cc', 'phantoms/sanity.cc']
+fullpet_lib_includes = ['geometry/combine.hh', 'geometry/detector.hh', 'generators/generate_primaries.hh', 'io/hdf5.hh', 'phantoms/sanity.hh']
+fullpet_lib_sources  = ['geometry/combine.cc', 'geometry/detector.cc', 'generators/generate_primaries.cc', 'io/hdf5.cc', 'phantoms/sanity.cc']
 
 geant4_include = geant4.get_variable(cmake    : 'Geant4_INCLUDE_DIRS')
 nain4_include  =  nain4.get_variable(pkgconfig: 'includedir'         )
 petmat_include = petmat.get_variable(pkgconfig: 'includedir'         )
+#hdf5_include   =   hdf5.get_variable(pkgconfig: 'HDF5_INCLUDE_DIR'   )
+#high5_include = high5.get_variable(cmake: 'HiGhFiVe_INCLUDE_DIRS')
 
 
 fullpet_lib = shared_library( 'fullpet'
-                                   , fullpet_lib_sources
-                                   , include_directories: [fullpet_lib_include, petmat_include, geant4_include]
-                                   , dependencies       : fullpet_lib_deps
-                                   , install            : true
-                                   )
+                            , fullpet_lib_sources
+                            , include_directories: [fullpet_lib_include, petmat_include, geant4_include]
+                            , dependencies       : fullpet_lib_deps
+                            , install            : true
+                            )
 
 fullpet_exe = executable( 'fullpet'
-                               , ['fullpet.cc']
-                               , include_directories: [fullpet_lib_include, nain4_include, petmat_include, geant4_include]
-                               , dependencies       : fullpet_lib_deps
-                               , link_with          : fullpet_lib
-                               , install            : true
-                               )
+                        , ['fullpet.cc']
+                        , include_directories: [fullpet_lib_include, nain4_include, petmat_include, geant4_include]
+                        , dependencies       : fullpet_lib_deps
+                        , link_with          : fullpet_lib
+                        , install            : true
+                        )
 
 install_headers(fullpet_lib_includes)
 

@@ -2,13 +2,15 @@
 , nixpkgs # <---- This `nixpkgs` has systems removed e.g. legacyPackages.zlib
 , nain4
 , pet-materials
+, oldpkgs
 , ...
 }: let
   inherit (nixpkgs.legacyPackages) pkgs;
   inherit (import ./helpers.nix {inherit pkgs;}) shell-shared;
   inherit (nain4.deps) args-from-cli make-app;
   petmat = pet-materials.packages.pet-materials;
-  dev-shell-packages = [ petmat ];
+  old = (oldpkgs.legacyPackages).pkgs;
+  extra-packages = [ petmat pkgs.hdf5-cpp pkgs.hdf5-cpp.dev old.highfive ];
   in {
 
     packages.default = self.packages.fullpet;
@@ -21,7 +23,7 @@
       src = "${self}/src";
       postInstall = "${pkgs.coreutils}/bin/cp -r ${self}/macs $out";
       nativeBuildInputs = [];
-      buildInputs = [ nain4.packages.nain4 petmat ];
+      buildInputs = [ nain4.packages.nain4 ] ++ extra-packages;
     };
 
     # Executed by `nix run <URL of this flake> -- <args?>`
@@ -40,13 +42,13 @@
     # Activated by `nix develop <URL to this flake>#clang`
     devShells.clang = pkgs.mkShell.override { stdenv = nain4.packages.clang_16.stdenv; } (shell-shared // {
       name = "fullpet-clang-devenv";
-      packages = nain4.deps.dev-shell-packages ++ dev-shell-packages ++ [ nain4.packages.clang_16 ];
+      packages = nain4.deps.dev-shell-packages ++ extra-packages ++ [ nain4.packages.clang_16 ];
     });
 
     # Activated by `nix develop <URL to this flake>#gcc`
     devShells.gcc = pkgs.mkShell (shell-shared // {
       name = "fullpet-gcc-devenv";
-      packages = nain4.deps.dev-shell-packages ++ dev-shell-packages;
+      packages = nain4.deps.dev-shell-packages ++ extra-packages;
     });
 
     # 1. `nix build` .#singularity

@@ -37,8 +37,12 @@ auto my_generator(const my& my) {
   return [&](auto ev) { return sanity.generate_primaries(ev); };
 }
 
-n4::actions* create_actions(my& my, unsigned& n_event, hdf5_io& writer) {
+n4::actions* create_actions(my& my, unsigned& n_event, std::unique_ptr<hdf5_io>& writer) {
   static auto GAMMA = G4Gamma::Definition();
+
+  auto open_writer = [&writer, &my]() { writer.reset(new hdf5_io{my.outfile});};
+  open_writer();
+
   auto my_stepping_action = [&] (const G4Step* step) {
     // ----- Magic LXe detector --------------------------------------------------------------------
     // 1. Immediately stop any particle that reaches LXe.
@@ -76,8 +80,8 @@ n4::actions* create_actions(my& my, unsigned& n_event, hdf5_io& writer) {
     u32 process_id = 0;
     u32  volume_id = 0;
 
-    writer.write_vertex(event_id, id, parent, x,y,z,t, moved, pre_KE, pst_KE, dep_E,
-                        process_id,   volume_id);
+    writer -> write_vertex(event_id, id, parent, x,y,z,t, moved, pre_KE, pst_KE, dep_E,
+                           process_id,   volume_id);
   };
 
   auto my_event_action = [&] (const G4Event*) {
@@ -117,12 +121,11 @@ int main(int argc, char* argv[]) {
   G4int physics_verbosity = 0;
 
   std::unique_ptr<hdf5_io> writer;
-  auto open_writer = [&writer, &my]() { writer.reset(new hdf5_io{my.outfile});};
-  open_writer();
 
   // The trailing slash after '/my_geometry' is CRUCIAL: without it, the
   // messenger violates the principle of least surprise.
   auto messenger = new G4GenericMessenger{nullptr, "/my/", "docs: bla bla bla"};
+  messenger -> DeclareProperty        ("outfile"           ,        my.outfile        );
   messenger -> DeclarePropertyWithUnit("straw_radius"      , "m"  , my. straw_radius  );
   messenger -> DeclarePropertyWithUnit("bubble_radius"     , "m"  , my.bubble_radius  );
   messenger -> DeclarePropertyWithUnit("socket_rot"        , "deg", my.socket_rot     );
@@ -136,18 +139,18 @@ int main(int argc, char* argv[]) {
     .macro_path("macs")
     // .apply_command("/my/something value")
     // .apply_early_macro("early-hard-wired.mac")
-    // .apply_cli_early() // CLI --early executed at this point
+    .apply_cli_early() // CLI --early executed at this point
     // .apply_command(...) // also possible after apply_early_macro
 
     .physics<FTFP_BERT>(physics_verbosity)
-     .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
+    .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
     // .geometry          ([&] {return sanity.geometry(); })
     //.geometry          (detector)
-    .actions           (create_actions(my, n_event, *writer.get()))
+    .actions           (create_actions(my, n_event, writer))
 
     // .apply_command("/my/particle e-")
     // .apply_late_macro("late-hard-wired.mac")
-    // .apply_cli_late() // CLI --late executed at this point
+    .apply_cli_late() // CLI --late executed at this point
     // .apply_command(...) // also possible after apply_late_macro
 
     .run();

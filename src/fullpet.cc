@@ -14,10 +14,12 @@
 #include <G4Sphere.hh>          // for creating shapes in the geometry
 #include <FTFP_BERT.hh>         // our choice of physics list
 #include <G4RandomDirection.hh> // for launching particles in random directions
-
-
 #include <G4ThreeVector.hh>
+#include <G4Gamma.hh>
+
 #include <cstdlib>
+
+auto sanity = sanity_check_phantom();
 
 struct my {
   G4double       straw_radius{0.1 * m};
@@ -29,27 +31,29 @@ struct my {
 };
 
 auto my_generator(const my& my) {
-  return [&](G4Event* event) {
-    auto particle_type = n4::find_particle(my.particle_name);
-    auto vertex = new G4PrimaryVertex();
-    auto r = my.particle_dir.mag2() > 0 ? my.particle_dir : G4RandomDirection();
-    vertex -> SetPrimary(new G4PrimaryParticle(
-                           particle_type,
-                           r.x(), r.y(), r.z(),
-                           my.particle_energy
-                         ));
-    event  -> AddPrimaryVertex(vertex);
-  };
+  return [&](auto ev) { return sanity.generate_primaries(ev); };
 }
 
 n4::actions* create_actions(my& my, unsigned& n_event) {
+  static auto GAMMA = G4Gamma::Definition();
   auto my_stepping_action = [&] (const G4Step* step) {
-    auto pt = step -> GetPreStepPoint();
-    auto volume_name = pt -> GetTouchable() -> GetVolume() -> GetName();
-    if (volume_name == "straw" || volume_name == "bubble") {
-      auto pos = pt -> GetPosition();
-      std::cout << volume_name << " " << pos << std::endl;
-    }
+    // ----- Magic LXe detector --------------------------------------------------------------------
+    // 1. Immediately stop any particle that reaches LXe.
+    // 2. Record only (a) gammas (b) which have reached LXe
+    static G4String scint_name{"scintillator"};
+    auto post_step_pt = step -> GetPostStepPoint();
+    auto track        = step -> GetTrack();
+    auto particle     = track -> GetParticleDefinition();
+    auto process_name = post_step_pt -> GetProcessDefinedStep() -> GetProcessName();
+
+    auto pst_physvol = post_step_pt -> GetPhysicalVolume();
+    auto volume_name = pst_physvol ? pst_physvol -> GetName() : "None";
+    // Stop as soon as LXe reached
+    if (volume_name == scint_name) { track -> SetTrackStatus(G4TrackStatus::fStopAndKill); }
+    // Write only gammas entering LXe (not expecting anything other than gamma, before LXe)
+    if (volume_name != scint_name || particle != GAMMA || process_name != "Transportation" ) return;
+    auto pos = post_step_pt -> GetPosition();
+    std::cout << volume_name << " " << pos << std::endl;
   };
 
   auto my_event_action = [&] (const G4Event*) {
@@ -99,19 +103,19 @@ int main(int argc, char* argv[]) {
   messenger -> DeclareProperty        ("particle_direction",        my.particle_dir   );
   messenger -> DeclareProperty        ("physics_verbosity" ,        physics_verbosity );
 
-  auto sanity = sanity_check_phantom();
-
   n4::run_manager::create()
     .ui("fullpet", argc, argv)
     .macro_path("macs")
-    // .apply_command("/my/straw_radius 0.5 m")
+    // .apply_command("/my/something value")
     // .apply_early_macro("early-hard-wired.mac")
     // .apply_cli_early() // CLI --early executed at this point
     // .apply_command(...) // also possible after apply_early_macro
 
     .physics<FTFP_BERT>(physics_verbosity)
-    .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
-    .actions           ([&] (auto ev){return sanity.generate_primaries(ev); })
+     .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
+    // .geometry          ([&] {return sanity.geometry(); })
+    //.geometry          (detector)
+    .actions           (create_actions(my, n_event))
 
     // .apply_command("/my/particle e-")
     // .apply_late_macro("late-hard-wired.mac")

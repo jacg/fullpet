@@ -2,15 +2,13 @@
 , nixpkgs # <---- This `nixpkgs` has systems removed e.g. legacyPackages.zlib
 , nain4
 , pet-materials
-, oldpkgs
 , ...
 }: let
   inherit (nixpkgs.legacyPackages) pkgs;
   inherit (import ./helpers.nix {inherit pkgs;}) shell-shared;
   inherit (nain4.deps) args-from-cli make-app;
   petmat = pet-materials.packages.pet-materials;
-  old = (oldpkgs.legacyPackages).pkgs;
-  extra-packages = [ petmat old.hdf5-cpp old.hdf5-cpp.dev old.highfive ];
+  extra-packages = [ petmat pkgs.hdf5-cpp pkgs.hdf5-cpp.dev pkgs.highfive ];
   in {
 
     packages.default = self.packages.fullpet;

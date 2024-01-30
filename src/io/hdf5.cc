@@ -2,6 +2,7 @@
 
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataSpace.hpp>
+#include <highfive/H5DataType.hpp>
 
 #include <cstring>
 #include <highfive/H5File.hpp>
@@ -16,6 +17,15 @@ hdf5_io::hdf5_io(std::string file_name)
 
 template<class T> using hdf_t = HF::AtomicType<T>;
 
+
+// Sometime between HighFive 2.2 and 2.7 the `inline` was added to the
+// definition of HIGHFIVE_REGISTER_TYPE. This results in the linker not finding
+// the implementations of the functions registered by the macro. So we hack
+// around it by defining our own version of the macro without the `inline`.
+#define HIGHFIVE_REGISTER_TYPE_NO_INLINE(type, function) \
+    template<> /*inline*/ HighFive::DataType HighFive::create_datatype<type>() { return function(); }
+
+
 HF::CompoundType create_primaries_type() {
   return {{"event_id", hdf_t<u32>{}},
           {"x"       , hdf_t<f16>{}},
@@ -26,7 +36,7 @@ HF::CompoundType create_primaries_type() {
           {"vz"      , hdf_t<f16>{}},
   };
 }
-HIGHFIVE_REGISTER_TYPE(primaries_t, create_primaries_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(primaries_t, create_primaries_type)
 
 HF::CompoundType create_vertex_type() {
   return {{ "event_id" , hdf_t<u32>{}},
@@ -44,7 +54,7 @@ HF::CompoundType create_vertex_type() {
           { "volume_id", hdf_t<u32>{}},
   };
 }
-HIGHFIVE_REGISTER_TYPE(vertex_t, create_vertex_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(vertex_t, create_vertex_type)
 
 HF::CompoundType create_sensor_xyz_type() {
   return {{"sensor_id", hdf_t<u32>{}},
@@ -52,21 +62,21 @@ HF::CompoundType create_sensor_xyz_type() {
           {"y"        , hdf_t<f16>{}},
           {"z"        , hdf_t<f16>{}}};
 }
-HIGHFIVE_REGISTER_TYPE(sensor_xyz_t, create_sensor_xyz_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(sensor_xyz_t, create_sensor_xyz_type)
 
 HF::CompoundType create_waveform_type() {
   return {{"event_id" , hdf_t<u32>{}},
           {"sensor_id", hdf_t<u32>{}},
           {"time"     , hdf_t<f16>{}}};
 }
-HIGHFIVE_REGISTER_TYPE(waveform_t, create_waveform_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(waveform_t, create_waveform_type)
 
 HF::CompoundType create_total_charge_type() {
   return {{"event_id" , hdf_t<u32>{}},
           {"sensor_id", hdf_t<u32>{}},
           {"charge"   , hdf_t<u32>{}}};
 }
-HIGHFIVE_REGISTER_TYPE(total_charge_t, create_total_charge_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(total_charge_t, create_total_charge_type)
 
 HF::CompoundType create_hit_type() {
   return {{"event_id", hdf_t<u32>{}},
@@ -75,13 +85,13 @@ HF::CompoundType create_hit_type() {
           {"z"       , hdf_t<f16>{}},
           {"t"       , hdf_t<f16>{}}};
 }
-HIGHFIVE_REGISTER_TYPE(hit_t, create_hit_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(hit_t, create_hit_type)
 
 HF::CompoundType create_runinfo_type() {
   return {{"param_key"  , hdf_t<char[CONFLEN]>{}},
           {"param_value", hdf_t<char[CONFLEN]>{}}};
 }
-HIGHFIVE_REGISTER_TYPE(run_info_t, create_runinfo_type)
+HIGHFIVE_REGISTER_TYPE_NO_INLINE(run_info_t, create_runinfo_type)
 
 void set_string_param(char * to, const char * from, u32 max_len) {
   memset(to, 0, max_len);

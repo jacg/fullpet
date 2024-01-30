@@ -6,7 +6,6 @@
     pet-materials.url     = "github:gonzaponte/pet-materials";
     nosys        .follows = "nain4/nosys";
     nixpkgs      .follows = "nain4/nixpkgs";
-    oldpkgs      .url     = "github:nixos/nixpkgs/nixos-21.11";
   };
 
   outputs = inputs @ {

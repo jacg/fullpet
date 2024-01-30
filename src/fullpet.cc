@@ -24,6 +24,7 @@
 auto sanity = sanity_check_phantom();
 
 struct my {
+  G4String      outfile{"out.h5"};
   G4double       straw_radius{0.1 * m};
   G4double      bubble_radius{0.2 * m};
   G4double      socket_rot   {-90 * deg};
@@ -36,7 +37,7 @@ auto my_generator(const my& my) {
   return [&](auto ev) { return sanity.generate_primaries(ev); };
 }
 
-n4::actions* create_actions(my& my, unsigned& n_event) {
+n4::actions* create_actions(my& my, unsigned& n_event, hdf5_io& writer) {
   static auto GAMMA = G4Gamma::Definition();
   auto my_stepping_action = [&] (const G4Step* step) {
     // ----- Magic LXe detector --------------------------------------------------------------------
@@ -54,8 +55,29 @@ n4::actions* create_actions(my& my, unsigned& n_event) {
     if (volume_name == scint_name) { track -> SetTrackStatus(G4TrackStatus::fStopAndKill); }
     // Write only gammas entering LXe (not expecting anything other than gamma, before LXe)
     if (volume_name != scint_name || particle != GAMMA || process_name != "Transportation" ) return;
+
+    // Event and particle identities
+    auto event_id = n4::event_number(); // TODO; get offset for this job from messenger
+    auto id     = track -> GetTrackID();
+    auto parent = track -> GetParentID();
+
+    // Position, motion and timing
     auto pos = post_step_pt -> GetPosition();
-    std::cout << volume_name << " " << pos << std::endl;
+    auto x = pos.x(); auto y = pos.y(); auto z = pos.z();
+    auto t = post_step_pt -> GetGlobalTime();
+    auto moved = step -> GetDeltaPosition().mag();
+
+    // Energy
+    auto pre_KE = post_step_pt -> GetKineticEnergy()      / keV;
+    auto pst_KE = post_step_pt -> GetKineticEnergy()      / keV;
+    auto dep_E  = step         -> GetTotalEnergyDeposit() / keV;
+
+    // TODO, replace dummy values
+    u32 process_id = 0;
+    u32  volume_id = 0;
+
+    writer.write_vertex(event_id, id, parent, x,y,z,t, moved, pre_KE, pst_KE, dep_E,
+                        process_id,   volume_id);
   };
 
   auto my_event_action = [&] (const G4Event*) {
@@ -95,6 +117,8 @@ int main(int argc, char* argv[]) {
   G4int physics_verbosity = 0;
 
   std::unique_ptr<hdf5_io> writer;
+  auto open_writer = [&writer, &my]() { writer.reset(new hdf5_io{my.outfile});};
+  open_writer();
 
   // The trailing slash after '/my_geometry' is CRUCIAL: without it, the
   // messenger violates the principle of least surprise.
@@ -119,7 +143,7 @@ int main(int argc, char* argv[]) {
      .geometry          ([&] {return combine_geometries(sanity.geometry(), detector()); })
     // .geometry          ([&] {return sanity.geometry(); })
     //.geometry          (detector)
-    .actions           (create_actions(my, n_event))
+    .actions           (create_actions(my, n_event, *writer.get()))
 
     // .apply_command("/my/particle e-")
     // .apply_late_macro("late-hard-wired.mac")
